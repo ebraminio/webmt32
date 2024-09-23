@@ -5,15 +5,15 @@
     'use strict';
     Promise.all([
         Module({
-            stdout: (c) => { document.body.append(String.fromCharCode(c)); },
-            stderr: (c) => { document.body.append(String.fromCharCode(c)); }
+            stdout: c => document.body.append(String.fromCharCode(c)),
+            stderr: c => document.body.append(String.fromCharCode(c))
         }),
-        fetch('mt32_ctrl_1_07.rom').then(x => x.blob()).then(x => x.arrayBuffer()).then(x => new Uint8Array(x)),
-        fetch('mt32_pcm.rom').then(x => x.blob()).then(x => x.arrayBuffer()).then(x => new Uint8Array(x)),
+        fetch('mt32_ctrl_1_07.rom').then(x => x.blob()).then(x => x.arrayBuffer()),
+        fetch('mt32_pcm.rom').then(x => x.blob()).then(x => x.arrayBuffer()),
     ]).then(([module, ctrl, pcm]) => {
         module.FS.mkdir('/rom');
-        module.FS.writeFile('/rom/mt32_ctrl_1_07.rom', ctrl);
-        module.FS.writeFile('/rom/mt32_pcm.rom', pcm);
+        module.FS.writeFile('/rom/mt32_ctrl_1_07.rom', new Uint8Array(ctrl));
+        module.FS.writeFile('/rom/mt32_pcm.rom', new Uint8Array(pcm));
         module._main(2);
 
         const result0 = new Float32Array(module.FS.readFile('/result0.pcm').buffer);
