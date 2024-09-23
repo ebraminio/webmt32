@@ -72,6 +72,7 @@ void render(const char *ctrl, const char *pcm) {
     service.addROMFile(ctrl);
     service.addROMFile(pcm);
     assert(service.openSynth() == MT32EMU_RC_OK);
+    report_handler.onLCDStateUpdated();
 
     service.playMsg(0x007f4591);
 
