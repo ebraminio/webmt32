@@ -20,9 +20,6 @@
         const result1 = new Float32Array(module.FS.readFile('/result1.pcm').buffer);
         window.play = () => {
             const ctx = new AudioContext();
-            const gain = ctx.createGain();
-            gain.gain.value = .5;
-            gain.connect(ctx.destination);
 
             const buffer = ctx.createBuffer(2, result0.length, 16000);
             buffer.copyToChannel(result0, 0);
@@ -30,7 +27,7 @@
 
             const activeNode = ctx.createBufferSource();
             activeNode.buffer = buffer;
-            activeNode.connect(gain);
+            activeNode.connect(ctx.destination);
             activeNode.start(0);
         };
     });
