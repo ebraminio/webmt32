@@ -75,16 +75,21 @@ void render(const char *ctrl, const char *pcm) {
 
     service.playMsg(0x007f4591);
 
-    FILE *f = fopen("result.pcm", "wb");
+    FILE *f0 = fopen("result0.pcm", "wb");
+    FILE *f1 = fopen("result1.pcm", "wb");
     unsigned samplerate = service.getActualStereoOutputSamplerate();
     auto *buffer = new float[samplerate];
     while (service.isActive()) {
         service.renderFloat(buffer, samplerate);
-        fwrite(buffer, sizeof(float), samplerate, f);
+        for (unsigned i = 0; i < samplerate; i += 2) {
+            fwrite(&buffer[i], sizeof(float), 1, f0);
+            fwrite(&buffer[i + 1], sizeof(float), 1, f1);
+        }
     }
     printf("Sample rate is: %d\n", samplerate);
     delete buffer;
-    fclose(f);
+    fclose(f0);
+    fclose(f1);
 }
 
 int main(int argc, char **argv) {
