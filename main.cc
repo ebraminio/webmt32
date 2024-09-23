@@ -97,7 +97,9 @@ int main(int argc, char **argv) {
     if (argc == 2) {
         render("/rom/mt32_ctrl_1_07.rom", "/rom/mt32_pcm.rom");
     } else {
+#ifndef __EMSCRIPTEN__
         render("../mt32_ctrl_1_07.rom", "../mt32_pcm.rom");
+#endif
     }
     return 0;
 }
