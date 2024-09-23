@@ -1,0 +1,35 @@
+<body style="white-space: pre; font-family: monospace;"><button onclick="play()">play</button></body>
+<script src="wasmbuild/webmt32.js"></script>
+<script>
+    'use strict';
+    Promise.all([
+        Module({
+            stdout: (c) => { document.body.append(String.fromCharCode(c)); },
+            stderr: (c) => { document.body.append(String.fromCharCode(c)); }
+        }),
+        fetch('mt32_ctrl_1_07.rom').then(x => x.blob()).then(x => x.arrayBuffer()).then(x => new Uint8Array(x)),
+        fetch('mt32_pcm.rom').then(x => x.blob()).then(x => x.arrayBuffer()).then(x => new Uint8Array(x)),
+    ]).then(([module, ctrl, pcm]) => {
+        module.FS.mkdir('/rom');
+        module.FS.writeFile('/rom/mt32_ctrl_1_07.rom', ctrl);
+        module.FS.writeFile('/rom/mt32_pcm.rom', pcm);
+        module._main(2);
+
+        const result = new Float32Array(module.FS.readFile('/result.pcm').buffer);
+        console.log(result);
+        window.play = () => {
+            const ctx = new AudioContext();
+            const gain = ctx.createGain();
+            gain.gain.value = .5;
+            gain.connect(ctx.destination);
+
+            const buffer = ctx.createBuffer(1, result.length, 16000);
+            buffer.copyToChannel(result, 0);
+
+            const activeNode = ctx.createBufferSource();
+            activeNode.buffer = buffer;
+            activeNode.connect(gain);
+            activeNode.start(0);
+        };
+    });
+</script>
