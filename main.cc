@@ -88,7 +88,7 @@ void render(const char *ctrl, const char *pcm) {
         }
     }
     printf("Sample rate is: %d\n", samplerate);
-    delete buffer;
+    delete[] buffer;
     fclose(f0);
     fclose(f1);
 }
