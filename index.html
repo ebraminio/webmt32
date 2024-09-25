@@ -12,7 +12,7 @@
         module.FS.mkdir('/rom');
         module.FS.writeFile('/rom/mt32_ctrl_1_07.rom', new Uint8Array(ctrl));
         module.FS.writeFile('/rom/mt32_pcm.rom', new Uint8Array(pcm));
-        module.lcdMessage = x => document.body.append(x + '\n');
+        module.lcdMessage = x => document.body.append(x.replace(/\x01/g, '*') + '\n');
         module._init();
 
         const context = new AudioContext();
