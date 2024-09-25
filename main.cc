@@ -10,9 +10,13 @@ MT32Emu::Service service;
 #ifdef __EMSCRIPTEN__
 extern "C" {
     extern void lcdMessage(const char *message);
+    extern void play(unsigned bufferSize, const float *channel0, const float *channel1, float timeOffset);
 }
 #else
 void lcdMessage(const char *message) { printf("%s\n", message); }
+
+void play(unsigned bufferSize, const float *channel0, const float *channel1, float timeOffset) {
+}
 #endif
 
 char lcdMessageBuffer[22] = {};
@@ -75,7 +79,7 @@ extern "C" unsigned sampleRate() {
     return service.getStereoOutputSamplerate(outputMode);
 }
 
-float *buffer;
+float *buffer, *channel0, *channel1;
 
 extern "C" void init() {
     service.createContext(report_handler);
@@ -89,38 +93,29 @@ extern "C" void init() {
 #endif
     assert(service.openSynth() == MT32EMU_RC_OK);
     report_handler.onLCDStateUpdated();
-    buffer = new float[sampleRate()];
+
+    const float samplerate = sampleRate();
+    buffer = new float[samplerate * 2];
+    channel0 = new float[samplerate];
+    channel1 = new float[samplerate];
 }
 
 extern "C" void playMsg(uint32_t msg) {
     service.playMsg(msg);
 }
 
-std::vector<float> channel0;
-std::vector<float> channel1;
-
-extern "C" float *getChannel0() { return channel0.data(); }
-extern "C" float *getChannel1() { return channel1.data(); }
-
-extern "C" unsigned render() {
+extern "C" void render() {
     const unsigned samplerate = sampleRate();
-
-    channel0.clear();
-    channel1.clear();
-
+    float timeOffset = .0f;
     while (service.isActive()) {
-        channel0.reserve(channel0.size() + samplerate);
-        channel1.reserve(channel1.size() + samplerate);
-
-        service.renderFloat(buffer, samplerate / 2);
-
-        for (unsigned i = 0; i < samplerate; i += 2) {
-            channel0.push_back(buffer[i]);
-            channel1.push_back(buffer[i + 1]);
+        service.renderFloat(buffer, samplerate);
+        for (unsigned i = 0; i < samplerate; ++i) {
+            channel0[i] = buffer[i * 2];
+            channel1[i] = buffer[i * 2 + 1];
         }
+        play(samplerate, channel0, channel1, timeOffset);
+        ++timeOffset;
     }
-
-    return channel0.size();
 }
 
 int main() {

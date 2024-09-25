@@ -16,23 +16,22 @@
         module._init();
 
         const context = new AudioContext();
+        const sampleRate = module._sampleRate();
 
         window.play = () => {
             module._playMsg(0x007f4591);
+            module._render();
+        };
 
-            const sampleRate = module._sampleRate();
-            const bufferSize = module._render();
-
+        module.play = (bufferSize, channel0, channel1, timeOffset) => {
             const buffer = context.createBuffer(2, bufferSize, sampleRate);
-            const channel0 = module._getChannel0() / 4;
-            const channel1 = module._getChannel1() / 4;
             buffer.copyToChannel(module.HEAPF32.subarray(channel0, channel0 + bufferSize), 0);
             buffer.copyToChannel(module.HEAPF32.subarray(channel1, channel1 + bufferSize), 1);
 
             const activeNode = context.createBufferSource();
             activeNode.buffer = buffer;
             activeNode.connect(context.destination);
-            activeNode.start(0);
-        };
+            activeNode.start(timeOffset);
+        }
     });
 </script>
