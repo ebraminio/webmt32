@@ -15,21 +15,21 @@
         module.lcdMessage = x => document.body.append(x + '\n');
         module._init();
 
+        const context = new AudioContext();
+
         window.play = () => {
             module._render(0x007f4591);
             const result0 = new Float32Array(module.FS.readFile('/result0.pcm').buffer);
             const result1 = new Float32Array(module.FS.readFile('/result1.pcm').buffer);
             const sampleRate = module._sampleRate();
 
-            const ctx = new AudioContext();
-
-            const buffer = ctx.createBuffer(2, result0.length, sampleRate);
+            const buffer = context.createBuffer(2, result0.length, sampleRate);
             buffer.copyToChannel(result0, 0);
             buffer.copyToChannel(result1, 1);
 
-            const activeNode = ctx.createBufferSource();
+            const activeNode = context.createBufferSource();
             activeNode.buffer = buffer;
-            activeNode.connect(ctx.destination);
+            activeNode.connect(context.destination);
             activeNode.start(0);
         };
     });
