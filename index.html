@@ -5,25 +5,25 @@
 <script>
     'use strict';
     Promise.all([
-        Module({
-            stdout: c => document.body.append(String.fromCharCode(c)),
-            stderr: c => document.body.append(String.fromCharCode(c))
-        }),
+        Module(),
         fetch('mt32_ctrl_1_07.rom').then(x => x.blob()).then(x => x.arrayBuffer()),
         fetch('mt32_pcm.rom').then(x => x.blob()).then(x => x.arrayBuffer()),
     ]).then(([module, ctrl, pcm]) => {
         module.FS.mkdir('/rom');
         module.FS.writeFile('/rom/mt32_ctrl_1_07.rom', new Uint8Array(ctrl));
         module.FS.writeFile('/rom/mt32_pcm.rom', new Uint8Array(pcm));
+        module.lcdMessage = x => document.body.append(x + '\n');
         module._init();
 
-        module._render(0x007f4591);
-        const result0 = new Float32Array(module.FS.readFile('/result0.pcm').buffer);
-        const result1 = new Float32Array(module.FS.readFile('/result1.pcm').buffer);
         window.play = () => {
+            module._render(0x007f4591);
+            const result0 = new Float32Array(module.FS.readFile('/result0.pcm').buffer);
+            const result1 = new Float32Array(module.FS.readFile('/result1.pcm').buffer);
+            const sampleRate = module._sampleRate();
+
             const ctx = new AudioContext();
 
-            const buffer = ctx.createBuffer(2, result0.length, 24000);
+            const buffer = ctx.createBuffer(2, result0.length, sampleRate);
             buffer.copyToChannel(result0, 0);
             buffer.copyToChannel(result1, 1);
 

@@ -4,21 +4,27 @@
 #define MT32EMU_API_TYPE 3
 #include <mt32emu/mt32emu.h>
 
-class ReportHandler : public MT32Emu::IReportHandlerV1 {
-    MT32Emu::Service *service;
+MT32Emu::Service service;
 
+#ifdef __EMSCRIPTEN__
+extern "C" {
+    extern void lcdMessage(const char *message);
+}
+#else
+void lcdMessage(const char *message) { printf("%s\n", message); }
+#endif
+
+char lcdMessageBuffer[22] = {};
+
+class ReportHandler : public MT32Emu::IReportHandlerV1 {
 public:
     virtual ~ReportHandler() = default;
-
-    explicit ReportHandler(MT32Emu::Service *service): IReportHandlerV1(), service(service) {
-    }
 
     void printDebug(const char *fmt, va_list list) override { vprintf(fmt, list); }
 
     void onLCDStateUpdated() override {
-        char targetBuffer[32] = {};
-        service->getDisplayState(targetBuffer, false);
-        printf("%s\n", targetBuffer);
+        service.getDisplayState(lcdMessageBuffer, false);
+        showLCDMessage(lcdMessageBuffer);
     }
 
     void onErrorControlROM() override {
@@ -27,9 +33,7 @@ public:
     void onErrorPCMROM() override {
     }
 
-    void showLCDMessage(const char *message) override {
-        printf("%s\n", message);
-    }
+    void showLCDMessage(const char *message) override { lcdMessage(message); }
 
     void onMIDIMessagePlayed() override {
     }
@@ -62,14 +66,13 @@ public:
 
     void onMidiMessageLEDStateUpdated(bool ledState) override {
     }
-};
+} report_handler;
 
-MT32Emu::Service service;
-ReportHandler report_handler{&service};
+auto outputMode = MT32Emu::AnalogOutputMode_ACCURATE;
 
 extern "C" void init() {
     service.createContext(report_handler);
-    service.setAnalogOutputMode(MT32Emu::AnalogOutputMode_ACCURATE);
+    service.setAnalogOutputMode(outputMode);
 #ifdef __EMSCRIPTEN__
     service.addROMFile("/rom/mt32_ctrl_1_07.rom");
     service.addROMFile("/rom/mt32_pcm.rom");
@@ -81,12 +84,16 @@ extern "C" void init() {
     report_handler.onLCDStateUpdated();
 }
 
+extern "C" unsigned sampleRate() {
+    return service.getStereoOutputSamplerate(outputMode);
+}
+
 extern "C" void render(uint32_t msg) {
     service.playMsg(msg);
 
     FILE *f0 = fopen("result0.pcm", "wb");
     FILE *f1 = fopen("result1.pcm", "wb");
-    const unsigned samplerate = service.getStereoOutputSamplerate(MT32Emu::AnalogOutputMode_ACCURATE);
+    const unsigned samplerate = sampleRate();
     auto *buffer = new float[samplerate];
     while (service.isActive()) {
         service.renderFloat(buffer, samplerate / 2);
@@ -95,7 +102,6 @@ extern "C" void render(uint32_t msg) {
             fwrite(&buffer[i + 1], sizeof(float), 1, f1);
         }
     }
-    printf("Sample rate is: %d\n", samplerate);
     delete[] buffer;
     fclose(f0);
     fclose(f1);
