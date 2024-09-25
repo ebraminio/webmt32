@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <meta name="color-scheme" content="light dark">
 <body style="white-space: pre; font-family: monospace;"><button onclick="play()">play</button></body>
 <script src="wasmbuild/webmt32.js"></script>
@@ -14,14 +15,15 @@
         module.FS.mkdir('/rom');
         module.FS.writeFile('/rom/mt32_ctrl_1_07.rom', new Uint8Array(ctrl));
         module.FS.writeFile('/rom/mt32_pcm.rom', new Uint8Array(pcm));
-        module._main(2);
+        module._init();
 
+        module._render(0x007f4591);
         const result0 = new Float32Array(module.FS.readFile('/result0.pcm').buffer);
         const result1 = new Float32Array(module.FS.readFile('/result1.pcm').buffer);
         window.play = () => {
             const ctx = new AudioContext();
 
-            const buffer = ctx.createBuffer(2, result0.length, 16000);
+            const buffer = ctx.createBuffer(2, result0.length, 24000);
             buffer.copyToChannel(result0, 0);
             buffer.copyToChannel(result1, 1);
 

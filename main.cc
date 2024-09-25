@@ -1,7 +1,6 @@
 #include <cstdio>
-#include <cstdlib>
+#include <cstdint>
 #include <cassert>
-#include <cmath>
 #define MT32EMU_API_TYPE 3
 #include <mt32emu/mt32emu.h>
 
@@ -14,7 +13,7 @@ public:
     explicit ReportHandler(MT32Emu::Service *service): IReportHandlerV1(), service(service) {
     }
 
-    void printDebug(const char *fmt, const va_list list) override { vprintf(fmt, list); }
+    void printDebug(const char *fmt, va_list list) override { vprintf(fmt, list); }
 
     void onLCDStateUpdated() override {
         char targetBuffer[32] = {};
@@ -65,23 +64,32 @@ public:
     }
 };
 
-void render(const char *ctrl, const char *pcm) {
-    MT32Emu::Service service;
-    ReportHandler report_handler{&service};
+MT32Emu::Service service;
+ReportHandler report_handler{&service};
+
+extern "C" void init() {
     service.createContext(report_handler);
-    service.addROMFile(ctrl);
-    service.addROMFile(pcm);
+    service.setAnalogOutputMode(MT32Emu::AnalogOutputMode_ACCURATE);
+#ifdef __EMSCRIPTEN__
+    service.addROMFile("/rom/mt32_ctrl_1_07.rom");
+    service.addROMFile("/rom/mt32_pcm.rom");
+#else
+    service.addROMFile("../mt32_ctrl_1_07.rom");
+    service.addROMFile("../mt32_pcm.rom");
+#endif
     assert(service.openSynth() == MT32EMU_RC_OK);
     report_handler.onLCDStateUpdated();
+}
 
-    service.playMsg(0x007f4591);
+extern "C" void render(uint32_t msg) {
+    service.playMsg(msg);
 
     FILE *f0 = fopen("result0.pcm", "wb");
     FILE *f1 = fopen("result1.pcm", "wb");
-    unsigned samplerate = service.getActualStereoOutputSamplerate();
+    const unsigned samplerate = service.getStereoOutputSamplerate(MT32Emu::AnalogOutputMode_ACCURATE);
     auto *buffer = new float[samplerate];
     while (service.isActive()) {
-        service.renderFloat(buffer, samplerate);
+        service.renderFloat(buffer, samplerate / 2);
         for (unsigned i = 0; i < samplerate; i += 2) {
             fwrite(&buffer[i], sizeof(float), 1, f0);
             fwrite(&buffer[i + 1], sizeof(float), 1, f1);
@@ -93,13 +101,10 @@ void render(const char *ctrl, const char *pcm) {
     fclose(f1);
 }
 
-int main(int argc, char **argv) {
-    if (argc == 2) {
-        render("/rom/mt32_ctrl_1_07.rom", "/rom/mt32_pcm.rom");
-    } else {
+int main() {
 #ifndef __EMSCRIPTEN__
-        render("../mt32_ctrl_1_07.rom", "../mt32_pcm.rom");
+    init();
+    render(0x007f4591);
 #endif
-    }
     return 0;
 }
