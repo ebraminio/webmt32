@@ -1,18 +1,26 @@
 <!DOCTYPE html>
 <meta name="color-scheme" content="light dark">
-<body style="white-space: pre; font-family: monospace;"><button onclick="play()">play</button></body>
+<body>
+<button onclick="play()">play</button>
+<br>
+<br>
+<div id="lcd" style="white-space: pre; font-family: monospace;">
+</div>
+<br>
+Supports attaching actual keyboard in Chrome/Firefox.
+</body>
 <script src="wasmbuild/webmt32.js"></script>
 <script>
     'use strict';
     Module().then(module => {
-        module.lcdMessage = x => document.body.append(x.replace(/\x01/g, '*') + '\n');
+        module.lcdMessage = x => document.querySelector('#lcd').textContent = x.replace(/\x01/g, '*');
         module._init();
 
         const context = new AudioContext();
         const sampleRate = module._sampleRate();
 
-        window.play = () => {
-            module._playMsg(0x007f4591);
+        window.play = msg => {
+            module._playMsg(msg || 0x007f4591);
             module._render();
         };
 
@@ -27,4 +35,12 @@
             activeNode.start(timeOffset);
         }
     });
+
+    if (navigator.requestMIDIAccess) navigator.requestMIDIAccess().then(midi => {
+        midi.inputs.forEach(entry => entry.onmidimessage = event => {
+            if (event.data.length === 3) {
+                play((event.data[2] << 16) + (event.data[1] << 8) + event.data[0]);
+            } else console.log(event.data);
+        });
+    }).catch(console.error);
 </script>
