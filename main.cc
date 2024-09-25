@@ -1,6 +1,7 @@
 #include <cstdio>
 #include <cstdint>
 #include <cassert>
+#include <vector>
 #define MT32EMU_API_TYPE 3
 #include <mt32emu/mt32emu.h>
 
@@ -70,6 +71,12 @@ public:
 
 auto outputMode = MT32Emu::AnalogOutputMode_ACCURATE;
 
+extern "C" unsigned sampleRate() {
+    return service.getStereoOutputSamplerate(outputMode);
+}
+
+float *buffer;
+
 extern "C" void init() {
     service.createContext(report_handler);
     service.setAnalogOutputMode(outputMode);
@@ -82,37 +89,45 @@ extern "C" void init() {
 #endif
     assert(service.openSynth() == MT32EMU_RC_OK);
     report_handler.onLCDStateUpdated();
-}
-
-extern "C" unsigned sampleRate() {
-    return service.getStereoOutputSamplerate(outputMode);
+    buffer = new float[sampleRate()];
 }
 
 extern "C" void playMsg(uint32_t msg) {
     service.playMsg(msg);
 }
 
-extern "C" void render() {
-    FILE *f0 = fopen("result0.pcm", "wb");
-    FILE *f1 = fopen("result1.pcm", "wb");
+std::vector<float> channel0;
+std::vector<float> channel1;
+
+extern "C" float *getChannel0() { return channel0.data(); }
+extern "C" float *getChannel1() { return channel1.data(); }
+
+extern "C" unsigned render() {
     const unsigned samplerate = sampleRate();
-    auto *buffer = new float[samplerate];
+
+    channel0.clear();
+    channel1.clear();
+
     while (service.isActive()) {
+        channel0.reserve(channel0.size() + samplerate);
+        channel1.reserve(channel1.size() + samplerate);
+
         service.renderFloat(buffer, samplerate / 2);
+
         for (unsigned i = 0; i < samplerate; i += 2) {
-            fwrite(&buffer[i], sizeof(float), 1, f0);
-            fwrite(&buffer[i + 1], sizeof(float), 1, f1);
+            channel0.push_back(buffer[i]);
+            channel1.push_back(buffer[i + 1]);
         }
     }
-    delete[] buffer;
-    fclose(f0);
-    fclose(f1);
+
+    return channel0.size();
 }
 
 int main() {
 #ifndef __EMSCRIPTEN__
     init();
-    render(0x007f4591);
+    playMsg(0x007f4591);
+    render();
 #endif
     return 0;
 }
