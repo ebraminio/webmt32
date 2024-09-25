@@ -85,8 +85,8 @@ extern "C" void init() {
     service.createContext(report_handler);
     service.setAnalogOutputMode(outputMode);
 #ifdef __EMSCRIPTEN__
-    service.addROMFile("/rom/mt32_ctrl_1_07.rom");
-    service.addROMFile("/rom/mt32_pcm.rom");
+    service.addROMFile("mt32_ctrl_1_07.rom");
+    service.addROMFile("mt32_pcm.rom");
 #else
     service.addROMFile("../mt32_ctrl_1_07.rom");
     service.addROMFile("../mt32_pcm.rom");

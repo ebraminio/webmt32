@@ -27,7 +27,7 @@ Module['ready'] = new Promise((resolve, reject) => {
   readyPromiseResolve = resolve;
   readyPromiseReject = reject;
 });
-["_init","_render","_main","_lcdMessage","_sampleRate","_playMsg","_memory","___indirect_function_table","_fflush","onRuntimeInitialized"].forEach((prop) => {
+["_init","_render","_main","_lcdMessage","_sampleRate","_playMsg","_memory","___indirect_function_table","___emscripten_embedded_file_data","_fflush","onRuntimeInitialized"].forEach((prop) => {
   if (!Object.getOwnPropertyDescriptor(Module['ready'], prop)) {
     Object.defineProperty(Module['ready'], prop, {
       get: () => abort('You are getting ' + prop + ' on the Promise object, instead of the instance. Use .then() to get called back with the instance, see the MODULARIZE docs in src/settings.js'),
@@ -3989,6 +3989,23 @@ function dbg(text) {
   }
   }
 
+  
+  
+  var __emscripten_fs_load_embedded_files = (ptr) => {
+      do {
+        var name_addr = HEAPU32[((ptr)>>2)];
+        ptr += 4;
+        var len = HEAPU32[((ptr)>>2)];
+        ptr += 4;
+        var content = HEAPU32[((ptr)>>2)];
+        ptr += 4;
+        var name = UTF8ToString(name_addr)
+        FS.createPath('/', PATH.dirname(name), true, true);
+        // canOwn this data in the filesystem, it is a slice of wasm memory that will never change
+        FS.createDataFile(name, null, HEAP8.subarray(content, content + len), true, true, true);
+      } while (HEAPU32[((ptr)>>2)]);
+    };
+
   var _abort = () => {
       abort('native code called abort()');
     };
@@ -4533,7 +4550,6 @@ function dbg(text) {
 
 
 
-
   var FS_unlink = (path) => FS.unlink(path);
 
   var FSNode = /** @constructor */ function(parent, name, mode, rdev) {
@@ -4719,6 +4735,8 @@ var wasmImports = {
   /** @export */
   __syscall_openat: ___syscall_openat,
   /** @export */
+  _emscripten_fs_load_embedded_files: __emscripten_fs_load_embedded_files,
+  /** @export */
   abort: _abort,
   /** @export */
   emscripten_memcpy_js: _emscripten_memcpy_js,
@@ -4767,7 +4785,7 @@ var dynCall_viijii = Module['dynCall_viijii'] = createExportWrapper('dynCall_vii
 var dynCall_iiiiij = Module['dynCall_iiiiij'] = createExportWrapper('dynCall_iiiiij');
 var dynCall_iiiiijj = Module['dynCall_iiiiijj'] = createExportWrapper('dynCall_iiiiijj');
 var dynCall_iiiiiijj = Module['dynCall_iiiiiijj'] = createExportWrapper('dynCall_iiiiiijj');
-
+var ___emscripten_embedded_file_data = Module['___emscripten_embedded_file_data'] = 664964;
 
 // include: postamble.js
 // === Auto-generated postamble setup entry stuff ===
@@ -4810,7 +4828,6 @@ Module['FS_createLazyFile'] = FS.createLazyFile;
 Module['FS_createDevice'] = FS.createDevice;
 Module['UTF8ToString'] = UTF8ToString;
 Module['FS_createPreloadedFile'] = FS.createPreloadedFile;
-Module['FS'] = FS;
 Module['FS_createDataFile'] = FS.createDataFile;
 Module['FS_unlink'] = FS.unlink;
 var missingLibrarySymbols = [
@@ -5069,6 +5086,7 @@ var unexportedSymbols = [
   'FS_getMode',
   'FS_stdin_getChar_buffer',
   'FS_stdin_getChar',
+  'FS',
   'MEMFS',
   'TTY',
   'PIPEFS',

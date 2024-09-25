@@ -4,14 +4,7 @@
 <script src="wasmbuild/webmt32.js"></script>
 <script>
     'use strict';
-    Promise.all([
-        Module(),
-        fetch('mt32_ctrl_1_07.rom').then(x => x.blob()).then(x => x.arrayBuffer()),
-        fetch('mt32_pcm.rom').then(x => x.blob()).then(x => x.arrayBuffer()),
-    ]).then(([module, ctrl, pcm]) => {
-        module.FS.mkdir('/rom');
-        module.FS.writeFile('/rom/mt32_ctrl_1_07.rom', new Uint8Array(ctrl));
-        module.FS.writeFile('/rom/mt32_pcm.rom', new Uint8Array(pcm));
+    Module().then(module => {
         module.lcdMessage = x => document.body.append(x.replace(/\x01/g, '*') + '\n');
         module._init();
 
