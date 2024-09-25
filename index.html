@@ -18,7 +18,9 @@
         const context = new AudioContext();
 
         window.play = () => {
-            module._render(0x007f4591);
+            module._playMsg(0x007f4591);
+
+            module._render();
             const result0 = new Float32Array(module.FS.readFile('/result0.pcm').buffer);
             const result1 = new Float32Array(module.FS.readFile('/result1.pcm').buffer);
             const sampleRate = module._sampleRate();

@@ -88,9 +88,11 @@ extern "C" unsigned sampleRate() {
     return service.getStereoOutputSamplerate(outputMode);
 }
 
-extern "C" void render(uint32_t msg) {
+extern "C" void playMsg(uint32_t msg) {
     service.playMsg(msg);
+}
 
+extern "C" void render() {
     FILE *f0 = fopen("result0.pcm", "wb");
     FILE *f1 = fopen("result1.pcm", "wb");
     const unsigned samplerate = sampleRate();

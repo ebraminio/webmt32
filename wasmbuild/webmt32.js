@@ -27,7 +27,7 @@ Module['ready'] = new Promise((resolve, reject) => {
   readyPromiseResolve = resolve;
   readyPromiseReject = reject;
 });
-["_init","_render","_main","_lcdMessage","_sampleRate","_memory","___indirect_function_table","_fflush","onRuntimeInitialized"].forEach((prop) => {
+["_init","_render","_main","_lcdMessage","_sampleRate","_playMsg","_memory","___indirect_function_table","_fflush","onRuntimeInitialized"].forEach((prop) => {
   if (!Object.getOwnPropertyDescriptor(Module['ready'], prop)) {
     Object.defineProperty(Module['ready'], prop, {
       get: () => abort('You are getting ' + prop + ' on the Promise object, instead of the instance. Use .then() to get called back with the instance, see the MODULARIZE docs in src/settings.js'),
@@ -4741,6 +4741,7 @@ var wasmExports = createWasm();
 var ___wasm_call_ctors = createExportWrapper('__wasm_call_ctors');
 var _init = Module['_init'] = createExportWrapper('init');
 var _sampleRate = Module['_sampleRate'] = createExportWrapper('sampleRate');
+var _playMsg = Module['_playMsg'] = createExportWrapper('playMsg');
 var _render = Module['_render'] = createExportWrapper('render');
 var _main = Module['_main'] = createExportWrapper('main');
 var ___errno_location = createExportWrapper('__errno_location');
