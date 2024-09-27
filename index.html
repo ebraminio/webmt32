@@ -14,7 +14,7 @@ Supports attaching actual keyboard in Chrome/Firefox.
     'use strict';
     Module().then(module => {
         module.lcdMessage = x => document.querySelector('#lcd').textContent = x.replace(/\x01/g, '*');
-        const bufferSize = 4096;
+        const bufferSize = 8192;
         module._init(bufferSize);
         const channel0 = module._channel(0) / 4;
         const channel1 = module._channel(1) / 4;
@@ -22,10 +22,8 @@ Supports attaching actual keyboard in Chrome/Firefox.
         let context;
         const sampleRate = module._sampleRate();
 
-        window.start = () => {
-            context = new AudioContext();
-            module._playMsg(0x7f4591);
-        }
+        let isOnPlay = false;
+        let next;
 
         const getBufferSource = () => {
             module._render();
@@ -35,23 +33,27 @@ Supports attaching actual keyboard in Chrome/Firefox.
             const bufferSource = context.createBufferSource();
             bufferSource.buffer = buffer;
             bufferSource.connect(context.destination);
+            bufferSource.onended = () => {
+                if (next === undefined) {
+                    isOnPlay = false;
+                } else {
+                    next.start();
+                    if (module._isActive()) {
+                        next = getBufferSource();
+                    }
+                }
+            };
             return bufferSource;
         };
 
-        let isOnPlay = false;
-        let lastTime = Date.now();
-        setInterval(() => {
-            if (context === undefined) return;
-            if (!module._isActive()) return;
-
+        window.start = () => {
+            context = new AudioContext();
+            module._playMsg(0x7f4591);
             if (!isOnPlay) {
-                const bufferSource = getBufferSource();
-                bufferSource.start();
-                bufferSource.onended = () => isOnPlay = false;
-                isOnPlay = true;
-                lastTime = Date.now() + bufferSource.buffer.duration * 1000;
+                getBufferSource().start();
+                next = getBufferSource();
             }
-        }, 1000 * bufferSize / sampleRate);
+        }
 
         if (navigator.requestMIDIAccess) navigator.requestMIDIAccess().then(midi => {
             midi.inputs.forEach(entry => entry.onmidimessage = event => {
