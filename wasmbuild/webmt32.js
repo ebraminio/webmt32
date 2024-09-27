@@ -27,7 +27,7 @@ Module['ready'] = new Promise((resolve, reject) => {
   readyPromiseResolve = resolve;
   readyPromiseReject = reject;
 });
-["_init","_render","_main","_lcdMessage","_sampleRate","_playMsg","_memory","___indirect_function_table","___emscripten_embedded_file_data","_fflush","onRuntimeInitialized"].forEach((prop) => {
+["_init","_render","_isActive","_main","_sampleRate","_playMsg","_channel","_memory","___indirect_function_table","___emscripten_embedded_file_data","_fflush","onRuntimeInitialized"].forEach((prop) => {
   if (!Object.getOwnPropertyDescriptor(Module['ready'], prop)) {
     Object.defineProperty(Module['ready'], prop, {
       get: () => abort('You are getting ' + prop + ' on the Promise object, instead of the instance. Use .then() to get called back with the instance, see the MODULARIZE docs in src/settings.js'),
@@ -4193,11 +4193,6 @@ function dbg(text) {
   function _lcdMessage(message) {
           Module.lcdMessage(Module.UTF8ToString(message));
       }
-  Module['_lcdMessage'] = _lcdMessage;
-
-  function _play(bufferSize, channel0, channel1, timeOffset) {
-          Module.play(bufferSize, channel0 / 4, channel1 / 4, timeOffset);
-      }
 
   var isLeapYear = (year) => {
         return year%4 === 0 && (year%100 !== 0 || year%400 === 0);
@@ -4757,8 +4752,6 @@ var wasmImports = {
   /** @export */
   lcdMessage: _lcdMessage,
   /** @export */
-  play: _play,
-  /** @export */
   strftime_l: _strftime_l
 };
 var wasmExports = createWasm();
@@ -4766,6 +4759,8 @@ var ___wasm_call_ctors = createExportWrapper('__wasm_call_ctors');
 var _sampleRate = Module['_sampleRate'] = createExportWrapper('sampleRate');
 var _init = Module['_init'] = createExportWrapper('init');
 var _playMsg = Module['_playMsg'] = createExportWrapper('playMsg');
+var _isActive = Module['_isActive'] = createExportWrapper('isActive');
+var _channel = Module['_channel'] = createExportWrapper('channel');
 var _render = Module['_render'] = createExportWrapper('render');
 var _main = Module['_main'] = createExportWrapper('main');
 var ___errno_location = createExportWrapper('__errno_location');

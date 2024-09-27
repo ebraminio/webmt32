@@ -10,12 +10,12 @@ MT32Emu::Service service;
 #ifdef __EMSCRIPTEN__
 extern "C" {
     extern void lcdMessage(const char *message);
-    extern void play(unsigned bufferSize, const float *channel0, const float *channel1, float timeOffset);
+    extern void play(const float *channel0, const float *channel1);
 }
 #else
 void lcdMessage(const char *message) { printf("%s\n", message); }
 
-void play(unsigned bufferSize, const float *channel0, const float *channel1, float timeOffset) {
+void play(const float *channel0, const float *channel1) {
 }
 #endif
 
@@ -80,8 +80,9 @@ extern "C" unsigned sampleRate() {
 }
 
 float *buffer, *channel0, *channel1;
+unsigned bufSize = 0;
 
-extern "C" void init() {
+extern "C" void init(int bufferSize) {
     service.createContext(report_handler);
     service.setAnalogOutputMode(outputMode);
 #ifdef __EMSCRIPTEN__
@@ -94,33 +95,35 @@ extern "C" void init() {
     assert(service.openSynth() == MT32EMU_RC_OK);
     report_handler.onLCDStateUpdated();
 
-    const float samplerate = sampleRate();
-    buffer = new float[samplerate * 2];
-    channel0 = new float[samplerate];
-    channel1 = new float[samplerate];
+    buffer = new float[bufferSize * 2];
+    channel0 = new float[bufferSize];
+    channel1 = new float[bufferSize];
+    bufSize = bufferSize;
 }
 
 extern "C" void playMsg(uint32_t msg) {
     service.playMsg(msg);
 }
 
+extern "C" bool isActive() {
+    return service.isActive();
+}
+
+extern "C" const float *channel(unsigned ord) {
+    return ord == 0 ? channel0 : channel1;
+}
+
 extern "C" void render() {
-    const unsigned samplerate = sampleRate();
-    float timeOffset = .0f;
-    while (service.isActive()) {
-        service.renderFloat(buffer, samplerate);
-        for (unsigned i = 0; i < samplerate; ++i) {
-            channel0[i] = buffer[i * 2];
-            channel1[i] = buffer[i * 2 + 1];
-        }
-        play(samplerate, channel0, channel1, timeOffset);
-        ++timeOffset;
+    service.renderFloat(buffer, bufSize);
+    for (unsigned i = 0; i < bufSize; ++i) {
+        channel0[i] = buffer[i * 2];
+        channel1[i] = buffer[i * 2 + 1];
     }
 }
 
 int main() {
 #ifndef __EMSCRIPTEN__
-    init();
+    init(512);
     playMsg(0x007f4591);
     render();
 #endif

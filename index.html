@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <meta name="color-scheme" content="light dark">
 <body>
-<button onclick="play()">play</button>
+<button onclick="start()">Start</button>
 <br>
 <br>
 <div id="lcd" style="white-space: pre; font-family: monospace;">
@@ -14,33 +14,51 @@ Supports attaching actual keyboard in Chrome/Firefox.
     'use strict';
     Module().then(module => {
         module.lcdMessage = x => document.querySelector('#lcd').textContent = x.replace(/\x01/g, '*');
-        module._init();
+        const bufferSize = 4096;
+        module._init(bufferSize);
+        const channel0 = module._channel(0) / 4;
+        const channel1 = module._channel(1) / 4;
 
-        const context = new AudioContext();
+        let context;
         const sampleRate = module._sampleRate();
 
-        window.play = msg => {
-            module._playMsg(msg || 0x007f4591);
-            module._render();
-        };
+        window.start = () => {
+            context = new AudioContext();
+            module._playMsg(0x7f4591);
+        }
 
-        module.play = (bufferSize, channel0, channel1, timeOffset) => {
+        const getBufferSource = () => {
+            module._render();
             const buffer = context.createBuffer(2, bufferSize, sampleRate);
             buffer.copyToChannel(module.HEAPF32.subarray(channel0, channel0 + bufferSize), 0);
             buffer.copyToChannel(module.HEAPF32.subarray(channel1, channel1 + bufferSize), 1);
+            const bufferSource = context.createBufferSource();
+            bufferSource.buffer = buffer;
+            bufferSource.connect(context.destination);
+            return bufferSource;
+        };
 
-            const activeNode = context.createBufferSource();
-            activeNode.buffer = buffer;
-            activeNode.connect(context.destination);
-            activeNode.start(timeOffset);
-        }
+        let isOnPlay = false;
+        let lastTime = Date.now();
+        setInterval(() => {
+            if (context === undefined) return;
+            if (!module._isActive()) return;
+
+            if (!isOnPlay) {
+                const bufferSource = getBufferSource();
+                bufferSource.start();
+                bufferSource.onended = () => isOnPlay = false;
+                isOnPlay = true;
+                lastTime = Date.now() + bufferSource.buffer.duration * 1000;
+            }
+        }, 1000 * bufferSize / sampleRate);
+
+        if (navigator.requestMIDIAccess) navigator.requestMIDIAccess().then(midi => {
+            midi.inputs.forEach(entry => entry.onmidimessage = event => {
+                if (event.data.length === 3) {
+                    module._playMsg((event.data[2] << 16) + (event.data[1] << 8) + event.data[0]);
+                } else console.log(event.data);
+            });
+        }).catch(console.error);
     });
-
-    if (navigator.requestMIDIAccess) navigator.requestMIDIAccess().then(midi => {
-        midi.inputs.forEach(entry => entry.onmidimessage = event => {
-            if (event.data.length === 3) {
-                play((event.data[2] << 16) + (event.data[1] << 8) + event.data[0]);
-            } else console.log(event.data);
-        });
-    }).catch(console.error);
 </script>
