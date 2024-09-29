@@ -5,10 +5,11 @@ project(
 )
 
 mt32emu_dep = dependency('mt32emu', method: 'builtin')
+openal_dep = dependency('openal', required: false)
 
 webmt32 = executable(
     'webmt32', 'main.cc',
-    dependencies: [mt32emu_dep],
+    dependencies: [mt32emu_dep, openal_dep],
     install: true
 )
 

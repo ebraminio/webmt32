@@ -12,48 +12,19 @@ Supports attaching actual keyboard in Chrome/Firefox.
 <script src="wasmbuild/webmt32.js"></script>
 <script>
     'use strict';
+    let lcdMessageQueue;
+    window.lcdMessage = x => lcdMessageQueue = x;
     Module().then(module => {
-        module.lcdMessage = x => document.querySelector('#lcd').textContent = x.replace(/\x01/g, '*');
-        const bufferSize = 8192;
-        module._init(bufferSize);
-        const channel0 = module._channel(0) / 4;
-        const channel1 = module._channel(1) / 4;
-
-        let context;
-        const sampleRate = module._sampleRate();
-
-        let isOnPlay = false;
-        let next;
-
-        const getBufferSource = () => {
-            module._render();
-            const buffer = context.createBuffer(2, bufferSize, sampleRate);
-            buffer.copyToChannel(module.HEAPF32.subarray(channel0, channel0 + bufferSize), 0);
-            buffer.copyToChannel(module.HEAPF32.subarray(channel1, channel1 + bufferSize), 1);
-            const bufferSource = context.createBufferSource();
-            bufferSource.buffer = buffer;
-            bufferSource.connect(context.destination);
-            bufferSource.onended = () => {
-                if (next === undefined) {
-                    isOnPlay = false;
-                } else {
-                    next.start();
-                    if (module._isActive()) {
-                        next = getBufferSource();
-                    }
-                }
-            };
-            return bufferSource;
-        };
-
-        window.start = () => {
-            context = new AudioContext();
-            module._playMsg(0x7f4591);
-            if (!isOnPlay) {
-                getBufferSource().start();
-                next = getBufferSource();
-            }
+        window.lcdMessage = x => {
+            document.querySelector('#lcd').textContent =
+                module.UTF8ToString(x).replace(/\x01/g, '*');
         }
+        if (lcdMessageQueue !== undefined) {
+            window.lcdMessage(lcdMessageQueue);
+            lcdMessageQueue = undefined;
+        }
+
+        window.start = () => module._playMsg(0x7f4591);
 
         if (navigator.requestMIDIAccess) navigator.requestMIDIAccess().then(midi => {
             midi.inputs.forEach(entry => entry.onmidimessage = event => {
