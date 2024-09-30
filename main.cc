@@ -1,8 +1,6 @@
 #include <AL/al.h>
 #include <AL/alc.h>
 #include <cassert>
-#include <climits>
-#include <cmath>
 #include <cstdint>
 #include <cstdio>
 #define MT32EMU_API_TYPE 3
@@ -127,5 +125,4 @@ extern "C" void playMsg(uint32_t msg) { service.playMsg(msg); }
         iter();
     }
 #endif
-    return 0;
 }
