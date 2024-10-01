@@ -1,0 +1,7 @@
+[wrap-git]
+url = https://github.com/ebraminio/fluidsynth-no-glib-meson-wasm.git
+revision = head
+depth = 1
+
+[provide]
+fluidsynth = fluidsynth_dep
