@@ -22,7 +22,7 @@ else
 endif
 
 webmt32 = executable(
-    'webmt32', 'main.cc',
+    'webmt32', 'src/main.cc',
     dependencies : [fluidsynth_dep, mt32emu_dep, openal_dep],
     link_args : link_args,
     install : true

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <fluidsynth.h>
 #define MT32EMU_API_TYPE 3
 #include <mt32emu/mt32emu.h>
@@ -7,11 +8,18 @@
 struct Synth {
     virtual ~Synth() = default;
 
-    virtual bool render(float *buffer, unsigned size) {
-        return false;
+    virtual bool render(
+        [[maybe_unused]] float *buffer,
+        [[maybe_unused]] unsigned size
+    ) { return false; }
+
+    virtual void handleShortMessage([[maybe_unused]] uint32_t message) {
     }
 
-    virtual void handleShortMessage(uint32_t message) {
+    virtual void handleSysEx(
+        [[maybe_unused]] const uint8_t *data,
+        [[maybe_unused]] size_t size
+    ) {
     }
 
     virtual unsigned sampleRate() {
@@ -19,7 +27,7 @@ struct Synth {
     }
 };
 
-struct FluidSynth : Synth {
+struct FluidSynth final : Synth {
     fluid_settings_t *settings;
     fluid_synth_t *synth;
 
@@ -97,14 +105,21 @@ struct FluidSynth : Synth {
         }
     }
 
-    bool render(float *buffer, unsigned size) override {
+    void handleSysEx(const uint8_t *data, const size_t size) override {
+        fluid_synth_sysex(
+            synth, reinterpret_cast<const char *>(data), size,
+            nullptr, nullptr, nullptr, 0
+        );
+    }
+
+    bool render(float *buffer, const unsigned size) override {
         if (fluid_synth_get_active_voice_count(synth) < 1) return false;
         fluid_synth_write_float(synth, size / 2, buffer, 0, 2, buffer, 1, 2);
         return true;
     }
 };
 
-class ReportHandler : public MT32Emu::IReportHandlerV1 {
+class ReportHandler final : public MT32Emu::IReportHandlerV1 {
     MT32Emu::Service &service;
     char lcdMessageBuffer[22] = {};
 
@@ -114,7 +129,7 @@ public:
 
     virtual ~ReportHandler() = default;
 
-    void printDebug(const char *fmt, va_list list) override { vprintf(fmt, list); }
+    void printDebug(const char *fmt, const va_list list) override { vprintf(fmt, list); }
 
     void onLCDStateUpdated() override {
         service.getDisplayState(lcdMessageBuffer, false);
@@ -134,7 +149,7 @@ public:
 
     bool onMIDIQueueOverflow() override { return false; }
 
-    void onMIDISystemRealtime(MT32Emu::Bit8u system_realtime) override {
+    void onMIDISystemRealtime(uint8_t system_realtime) override {
     }
 
     void onDeviceReset() override {
@@ -143,26 +158,26 @@ public:
     void onDeviceReconfig() override {
     }
 
-    void onNewReverbMode(MT32Emu::Bit8u mode) override {
+    void onNewReverbMode(uint8_t mode) override {
     }
 
-    void onNewReverbTime(MT32Emu::Bit8u time) override {
+    void onNewReverbTime(uint8_t time) override {
     }
 
-    void onNewReverbLevel(MT32Emu::Bit8u level) override {
+    void onNewReverbLevel(uint8_t level) override {
     }
 
-    void onPolyStateChanged(MT32Emu::Bit8u part_num) override {
+    void onPolyStateChanged(uint8_t part_num) override {
     }
 
-    void onProgramChanged(MT32Emu::Bit8u part_num, const char *sound_group_name, const char *patch_name) override {
+    void onProgramChanged(uint8_t part_num, const char *sound_group_name, const char *patch_name) override {
     }
 
     void onMidiMessageLEDStateUpdated(bool ledState) override {
     }
 };
 
-struct MT32Synth : Synth {
+struct MT32Synth final : Synth {
     MT32Emu::Service service;
     ReportHandler *report_handler;
 
@@ -186,11 +201,15 @@ struct MT32Synth : Synth {
         return service.getStereoOutputSamplerate(MT32Emu::AnalogOutputMode_ACCURATE);
     }
 
-    void handleShortMessage(uint32_t message) override {
+    void handleShortMessage(const uint32_t message) override {
         service.playMsg(message);
     }
 
-    bool render(float *buffer, unsigned size) override {
+    void handleSysEx(const uint8_t *data, const size_t size) override {
+        service.playSysex(data, size);
+    }
+
+    bool render(float *buffer, const unsigned size) override {
         if (!service.isActive()) return false;
         service.renderFloat(buffer, size / 2);
         return true;

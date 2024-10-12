@@ -17,7 +17,11 @@ void lcdMessage(const char *message) {
 #endif
 }
 
-#include "syntherizers.hh"
+#ifndef __EMSCRIPTEN__
+#include "midiparser.hh"
+#include "receivers.hh"
+#endif
+#include "synthesizers.hh"
 
 #define PCM_SIZE 2048
 float pcm[PCM_SIZE];
@@ -29,7 +33,7 @@ Synth *synth;
 static void stream_buffer(const ALuint bufferId) {
     alBufferData(
         bufferId, 0x10011/* AL_FORMAT_STEREO_FLOAT32 */,
-        synth->render(pcm, PCM_SIZE) ? pcm : emptyPcm, sizeof (pcm), sampleRate
+        synth->render(pcm, PCM_SIZE) ? pcm : emptyPcm, sizeof pcm, sampleRate
     );
 }
 
@@ -87,9 +91,15 @@ extern "C" void playMsg(uint32_t msg) {
     emscripten_set_main_loop(iter, 0, 0);
     return 0;
 #else
+    const auto midiParser = new MIDIParser(synth);
+    Receiver *receiver = new UDPReceiver(1999);
+
     while (true) {
         usleep(16);
         iter();
+        uint8_t buffer[1000];
+        unsigned n = receiver->receive(buffer, sizeof buffer);
+        if (n) midiParser->parseMIDIBytes(buffer, n);
     }
 #endif
 }
