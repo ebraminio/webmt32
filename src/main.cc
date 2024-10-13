@@ -9,7 +9,10 @@
 #include <unistd.h>
 #endif
 
+const char *currentMessage;
+
 void lcdMessage(const char *message) {
+    currentMessage = message;
 #ifdef __EMSCRIPTEN__
     EM_ASM({ window.lcdMessage($0); }, message);
 #else
@@ -20,6 +23,7 @@ void lcdMessage(const char *message) {
 #ifndef __EMSCRIPTEN__
 #include "midiparser.hh"
 #include "receivers.hh"
+#include "display.hh"
 #endif
 #include "synthesizers.hh"
 
@@ -95,12 +99,18 @@ extern "C" void playMsg(uint32_t msg) {
     Receiver *receiver = new UDPReceiver(1999);
     // Receiver *receiver = new TTYReceiver("/dev/ttyS0");
 
+    const uint32_t width = 128;
+    const uint32_t height = 64;
+    MiniFB<width, height> minifb;
+    Painter<width, height> painter;
+
     while (true) {
         usleep(16);
         iter();
         uint8_t buffer[1000];
         unsigned n = receiver->receive(buffer, sizeof buffer);
         if (n) midiParser->parseMIDIBytes(buffer, n);
+        minifb.update(painter.frame());
     }
 #endif
 }

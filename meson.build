@@ -10,6 +10,8 @@ if target_machine.system() == 'emscripten'
     fluidsynth_dep = dependency('fluidsynth', method : 'builtin')
     mt32emu_dep = dependency('mt32emu', method : 'builtin')
     openal_dep = null_dep
+    minifb_dep = null_dep
+    cairo_dep = null_dep
     link_args = [
         '-sNO_EXIT_RUNTIME=1', '-sMODULARIZE=1',
         '--embed-file', '../mt32_ctrl_1_07.rom@mt32_ctrl_1_07.rom',
@@ -21,8 +23,18 @@ if target_machine.system() == 'emscripten'
 else
     fluidsynth_dep = dependency('fluidsynth')
     mt32emu_dep = dependency('mt32emu')
-    # macOS's builtin OpenAL isn't bad just is a bit different
+    minifb_dep = import('cmake').subproject('minifb').dependency('minifb')
+    cairo_dep = dependency('cairo')
     if target_machine.system() == 'darwin'
+        minifb_dep = [
+            minifb_dep,
+            dependency(
+                'appleframeworks',
+                modules : ['Foundation', 'AppKit', 'Metal', 'MetalKit'],
+                required : true
+            ),
+        ]
+        # macOS's builtin OpenAL isn't bad just is a bit different
         openal_dep = dependency('openal', method : 'builtin')
     else
         openal_dep = dependency('openal')
@@ -32,7 +44,7 @@ endif
 
 webmt32 = executable(
     'webmt32', 'src/main.cc',
-    dependencies : [fluidsynth_dep, mt32emu_dep, openal_dep],
+    dependencies : [fluidsynth_dep, mt32emu_dep, openal_dep, minifb_dep, cairo_dep],
     link_args : link_args,
     install : true
 )

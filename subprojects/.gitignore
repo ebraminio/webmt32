@@ -2,3 +2,5 @@
 /munt-*
 /openal-soft-*
 /fluidsynth
+/minifb
+/cairo-*
