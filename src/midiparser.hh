@@ -202,6 +202,6 @@ private:
     Synth *synth;
     State state = State::StatusByte;
     // Matches mt32emu's SysEx buffer size
-    uint8_t messageBuffer[1000] = {};
+    uint8_t messageBuffer[1000]{};
     size_t messageLength = 0;
 };

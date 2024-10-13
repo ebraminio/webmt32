@@ -25,7 +25,7 @@ void lcdMessage(const char *message) {
 
 #define PCM_SIZE 2048
 float pcm[PCM_SIZE];
-float emptyPcm[PCM_SIZE] = {};
+float emptyPcm[PCM_SIZE]{};
 ALuint source = 0;
 unsigned sampleRate;
 Synth *synth;
@@ -80,7 +80,7 @@ extern "C" void playMsg(uint32_t msg) {
 
     alGenSources(1, &source); {
         enum { BUFFERS_COUNT = 4 };
-        ALuint buffers[BUFFERS_COUNT] = {};
+        ALuint buffers[BUFFERS_COUNT]{};
         alGenBuffers(BUFFERS_COUNT, buffers);
         for (const unsigned int buffer: buffers) stream_buffer(buffer);
         alSourceQueueBuffers(source, BUFFERS_COUNT, buffers);
@@ -93,6 +93,7 @@ extern "C" void playMsg(uint32_t msg) {
 #else
     const auto midiParser = new MIDIParser(synth);
     Receiver *receiver = new UDPReceiver(1999);
+    // Receiver *receiver = new TTYReceiver("/dev/ttyS0");
 
     while (true) {
         usleep(16);

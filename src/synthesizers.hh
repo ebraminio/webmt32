@@ -121,7 +121,7 @@ struct FluidSynth final : Synth {
 
 class ReportHandler final : public MT32Emu::IReportHandlerV1 {
     MT32Emu::Service &service;
-    char lcdMessageBuffer[22] = {};
+    char lcdMessageBuffer[22]{};
 
 public:
     explicit ReportHandler(MT32Emu::Service &service) : IReportHandlerV1(), service(service) {
