@@ -16,6 +16,7 @@ struct Receiver {
     ) { return 0; }
 };
 
+// This initially was based on https://www.geeksforgeeks.org/tcp-and-udp-server-using-select/
 class UDPReceiver final : public Receiver {
     int listenfd, udpfd, maxfdp1;
     fd_set rset = {};
