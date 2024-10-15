@@ -1,6 +1,8 @@
 #pragma once
 
 #include <cairo.h>
+#include <ctime>
+#include <cstring>
 
 template<unsigned width, unsigned height>
 class Painter {
