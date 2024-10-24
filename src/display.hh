@@ -4,7 +4,7 @@
 #include <ctime>
 #include <cstring>
 
-template<unsigned width, unsigned height>
+template<unsigned width, unsigned height, unsigned scale>
 class Painter {
     static_assert(width % 8 == 0, "width must be a multiple of 8");
     unsigned stride;
@@ -19,7 +19,7 @@ public:
         surface = cairo_image_surface_create_for_data(buffer, CAIRO_FORMAT_A1, width, height, stride);
         cr = cairo_create(surface);
         cairo_select_font_face(cr, "monospace", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
-        cairo_set_font_size(cr, 42);
+        cairo_set_font_size(cr, 42 * scale);
         cairo_set_source_rgb(cr, 1, 1, 1);
     }
 
@@ -31,13 +31,22 @@ public:
         char str[8] = {};
         snprintf(str, 6, "%02d%c%02d", tm->tm_hour, now % 2 ? ':' : ' ', tm->tm_min);
 
-        cairo_set_font_size(cr, 42);
-        cairo_move_to(cr, 0, 32);
+        cairo_set_font_size(cr, 42 * scale);
+        cairo_move_to(cr, 0, 32 * scale);
         cairo_show_text(cr, str);
 
-        cairo_set_font_size(cr, 10);
-        cairo_move_to(cr, 0, 56);
+        cairo_set_font_size(cr, 10 * scale);
+        cairo_move_to(cr, 0, 56 * scale);
         cairo_show_text(cr, currentMessage);
+
+        for (int i = 0; i < 16; i++) {
+            constexpr double w = width;
+            constexpr double h = height;
+            cairo_rectangle(
+                cr, w / 16 * i, h * 3 / 4, w / 16 - 1, -h * bars[i] / 4 / 256
+            );
+            cairo_fill(cr);
+        }
 
         return buffer;
     }

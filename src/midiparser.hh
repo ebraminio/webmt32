@@ -170,6 +170,10 @@ private:
             (messageLength == 2 && ((status >= 0xC0 && status <= 0xDF) || status == 0xF1 || status == 0xF3))) {
             const bool isNoteOn = (status & 0xF0) == 0x90;
 
+            if (isNoteOn && !isIgnoreNoteOns && messageLength == 3) {
+                bars[messageBuffer[0] & 0x0F] = messageBuffer[2];
+            }
+
             if (!(isNoteOn && isIgnoreNoteOns))
                 onShortMessage(prepareShortMessage());
 

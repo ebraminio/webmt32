@@ -10,6 +10,7 @@
 #endif
 
 const char *currentMessage;
+static uint8_t bars[16];
 
 void lcdMessage(const char *message) {
     currentMessage = message;
@@ -35,6 +36,7 @@ unsigned sampleRate;
 Synth *synth;
 
 static void stream_buffer(const ALuint bufferId) {
+    for (uint8_t &bar: bars) if (bar != 0) --bar;
     alBufferData(
         bufferId, 0x10011/* AL_FORMAT_STEREO_FLOAT32 */,
         synth->render(pcm, PCM_SIZE) ? pcm : emptyPcm, sizeof pcm, sampleRate
@@ -101,8 +103,9 @@ extern "C" void playMsg(uint32_t msg) {
 
     const uint32_t width = 128;
     const uint32_t height = 64;
-    MiniFB<width, height> minifb;
-    Painter<width, height> painter;
+    const uint32_t scale = 2;
+    MiniFB<width * scale, height * scale> minifb;
+    Painter<width * scale, height * scale, scale> painter;
 
     while (true) {
         usleep(16);
